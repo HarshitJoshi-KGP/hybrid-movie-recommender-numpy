@@ -1,0 +1,12 @@
+.git
+.github
+__pycache__
+*.pyc
+.pytest_cache
+venv
+.venv
+notebooks
+experiments
+data/ml-100k
+data/ml-100k.zip
+*.egg-info

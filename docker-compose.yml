@@ -1,0 +1,38 @@
+# Wires the FastAPI backend and the Streamlit demo together from one image
+# (see Dockerfile). Both mount data/ and src/mf_model.pkl read-only from the
+# host, so a fresh `python train.py` on the host is picked up by both
+# containers without a rebuild -- just restart them.
+#
+# Usage:
+#   python train.py                 # produces src/mf_model.pkl on the host first
+#   docker compose up --build
+#   API:       http://localhost:8000/docs
+#   Streamlit: http://localhost:8501
+#
+# Note: app.py (Streamlit) currently loads the model directly rather than
+# calling the API over HTTP, so the two services here run independently --
+# `depends_on` is omitted deliberately rather than implying a coupling that
+# doesn't exist in the code yet.
+services:
+  api:
+    build: .
+    command: ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+      - ./src/mf_model.pkl:/app/src/mf_model.pkl:ro
+    environment:
+      - RECS_CACHE_MAX_SIZE=2048
+      - RECS_CACHE_TTL_SECONDS=300
+    restart: unless-stopped
+
+  streamlit:
+    build: .
+    command: ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data:ro
+      - ./src/mf_model.pkl:/app/src/mf_model.pkl:ro
+    restart: unless-stopped
